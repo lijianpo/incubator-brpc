@@ -23,6 +23,7 @@ message RedisRequestBase {}
 message RedisResponseBase {}
 
 message EspMessageBase {}
+message IpcMessageBase {}
 
 message MemcacheRequestBase {}
 message MemcacheResponseBase {}

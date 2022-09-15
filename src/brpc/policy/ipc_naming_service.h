@@ -16,34 +16,44 @@
 // under the License.
 
 
-#ifndef  BRPC_POLICY_FILE_NAMING_SERVICE
-#define  BRPC_POLICY_FILE_NAMING_SERVICE
+#ifndef  BRPC_POLICY_IPC_NAMING_SERVICE
+#define  BRPC_POLICY_IPC_NAMING_SERVICE
 
 #include "brpc/naming_service.h"
+#include "brpc/channel.h"
 
 
 namespace brpc {
+class Channel;
 namespace policy {
 
-class FileNamingService : public NamingService {
-friend class ConsulNamingService;
-friend class IpcNamingService;
+class IpcNamingService : public NamingService {
 private:
     int RunNamingService(const char* service_name,
                          NamingServiceActions* actions) override;
 
-    int GetServers(const char *service_name,
+    int GetServers(const char* service_name,
                    std::vector<ServerNode>* servers);
 
     void Describe(std::ostream& os, const DescribeOptions&) const override;
 
     NamingService* New() const override;
 
+    int DegradeToOtherServiceIfNeeded(const char* service_name,
+                                      std::vector<ServerNode>* servers);
+
     void Destroy() override;
+
+private:
+    Channel _channel;
+    std::string _consul_index;
+    std::string _consul_url;
+    bool _backup_file_loaded = false;
+    bool _connected = false;
 };
 
 }  // namespace policy
 } // namespace brpc
 
 
-#endif  //BRPC_POLICY_FILE_NAMING_SERVICE
+#endif  //BRPC_POLICY_IPC_NAMING_SERVICE

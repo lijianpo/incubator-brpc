@@ -41,6 +41,8 @@
 #include "brpc/adaptive_max_concurrency.h"
 #include "brpc/http2.h"
 #include "brpc/redis.h"
+#include "brpc/ipc_message.h"
+#include "brpc/ipc_service.h"
 
 namespace brpc {
 
@@ -71,6 +73,8 @@ struct ServerOptions {
     // Owned by Server and deleted in server's destructor.
     // Default: NULL
     NsheadService* nshead_service;
+
+    IpcService* ipc_service;
 
     // Process requests in format of thrift_binary_head_t + blob.
     // Owned by Server and deleted in server's destructor.

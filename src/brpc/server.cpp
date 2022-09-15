@@ -123,6 +123,7 @@ ServerOptions::ServerOptions()
     : idle_timeout_sec(-1)
     , nshead_service(NULL)
     , thrift_service(NULL)
+    , ipc_service(NULL)
     , mongo_service_adaptor(NULL)
     , auth(NULL)
     , server_owns_auth(false)
@@ -327,6 +328,10 @@ void* Server::UpdateDerivedVars(void* arg) {
         server->options().nshead_service->Expose(prefix);
     }
 
+    if (server->options().ipc_service) {
+        server->options().ipc_service->Expose(prefix);
+    }
+
 #ifdef ENABLE_THRIFT_FRAMED_PROTOCOL
     if (server->options().thrift_service) {
         server->options().thrift_service->Expose(prefix);
@@ -415,6 +420,9 @@ Server::~Server() {
 
     delete _options.nshead_service;
     _options.nshead_service = NULL;
+
+    delete _options.ipc_service;
+    _options.ipc_service = NULL;
 
 #ifdef ENABLE_THRIFT_FRAMED_PROTOCOL
     delete _options.thrift_service;
@@ -1630,7 +1638,7 @@ void Server::GenerateVersionIfNeeded() {
         return;
     }
     int extra_count = !!_options.nshead_service + !!_options.rtmp_service +
-        !!_options.thrift_service + !!_options.redis_service;
+        !!_options.thrift_service + !!_options.redis_service + !!_options.ipc_service;
     _version.reserve((extra_count + service_count()) * 20);
     for (ServiceMap::const_iterator it = _fullname_service_map.begin();
          it != _fullname_service_map.end(); ++it) {
@@ -1646,6 +1654,13 @@ void Server::GenerateVersionIfNeeded() {
             _version.push_back('+');
         }
         _version.append(butil::class_name_str(*_options.nshead_service));
+    }
+
+    if (_options.ipc_service) {
+        if (!_version.empty()) {
+            _version.push_back('+');
+        }
+        _version.append(butil::class_name_str(*_options.ipc_service));
     }
 
 #ifdef ENABLE_THRIFT_FRAMED_PROTOCOL

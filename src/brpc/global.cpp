@@ -37,6 +37,7 @@
 #include "brpc/policy/domain_naming_service.h"
 #include "brpc/policy/remote_file_naming_service.h"
 #include "brpc/policy/consul_naming_service.h"
+#include "brpc/policy/ipc_naming_service.h"
 #include "brpc/policy/discovery_naming_service.h"
 
 // Load Balancers
@@ -71,6 +72,7 @@
 #include "brpc/policy/nshead_mcpack_protocol.h"
 #include "brpc/policy/rtmp_protocol.h"
 #include "brpc/policy/esp_protocol.h"
+#include "brpc/policy/ipc_protocol.h"
 #ifdef ENABLE_THRIFT_FRAMED_PROTOCOL
 # include "brpc/policy/thrift_protocol.h"
 #endif
@@ -134,6 +136,7 @@ struct GlobalExtensions {
     DomainNamingService dns_with_ssl;
     RemoteFileNamingService rfns;
     ConsulNamingService cns;
+    IpcNamingService ins;
     DiscoveryNamingService dcns;
 
     RoundRobinLoadBalancer rr_lb;
@@ -357,6 +360,7 @@ static void GlobalInitializeOrDieImpl() {
     NamingServiceExtension()->RegisterOrDie("redis", &g_ext->dns);
     NamingServiceExtension()->RegisterOrDie("remotefile", &g_ext->rfns);
     NamingServiceExtension()->RegisterOrDie("consul", &g_ext->cns);
+    NamingServiceExtension()->RegisterOrDie("ipc", &g_ext->ins);
     NamingServiceExtension()->RegisterOrDie("discovery", &g_ext->dcns);
 
     // Load Balancers
@@ -574,6 +578,16 @@ static void GlobalInitializeOrDieImpl() {
         NULL, NULL, NULL,
         CONNECTION_TYPE_POOLED_AND_SHORT, "esp"};
     if (RegisterProtocol(PROTOCOL_ESP, esp_protocol) != 0) {
+        exit(1);
+    }
+
+    Protocol ipc_protocol = {
+        ParseIpcMessage,
+        SerializeIpcRequest, PackIpcRequest,
+        ProcessIpcRequest, ProcessIpcResponse,
+        NULL, NULL, NULL,
+        CONNECTION_TYPE_POOLED_AND_SHORT, "ipc"};
+    if (RegisterProtocol(PROTOCOL_IPC, ipc_protocol) != 0) {
         exit(1);
     }
 

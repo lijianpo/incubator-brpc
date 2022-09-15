@@ -29,6 +29,7 @@
 #endif
 #include "brpc/rtmp.h"                 // RtmpService
 #include "brpc/builtin/common.h"
+#include "brpc/ipc_service.h"
 
 
 namespace brpc {
@@ -115,6 +116,19 @@ void StatusService::default_method(::google::protobuf::RpcController* cntl_base,
     DescribeOptions desc_options;
     desc_options.verbose = true;
     desc_options.use_html = use_html;
+
+    // IPC
+    const IpcService* ipc_svc = server->options().ipc_service;
+    if (ipc_svc && ipc_svc->_status) {
+        DescribeOptions options;
+        options.verbose = true;
+        options.use_html = use_html;
+        os << (use_html ? "<h3>" : "[");
+        ipc_svc->Describe(os, options);
+        os << (use_html ? "</h3>\n" : "]\n");
+        ipc_svc->_status->Describe(os, desc_options);
+        os << '\n';
+    }
 
     for (Server::ServiceMap::const_iterator 
             iter = services.begin(); iter != services.end(); ++iter) {

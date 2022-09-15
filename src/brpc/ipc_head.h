@@ -15,35 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
-#ifndef  BRPC_POLICY_FILE_NAMING_SERVICE
-#define  BRPC_POLICY_FILE_NAMING_SERVICE
-
-#include "brpc/naming_service.h"
-
+#ifndef BRPC_IPC_HEAD_H
+#define BRPC_IPC_HEAD_H
 
 namespace brpc {
-namespace policy {
 
-class FileNamingService : public NamingService {
-friend class ConsulNamingService;
-friend class IpcNamingService;
-private:
-    int RunNamingService(const char* service_name,
-                         NamingServiceActions* actions) override;
-
-    int GetServers(const char *service_name,
-                   std::vector<ServerNode>* servers);
-
-    void Describe(std::ostream& os, const DescribeOptions&) const override;
-
-    NamingService* New() const override;
-
-    void Destroy() override;
+#pragma pack(push, r1, 1)
+struct IpcHead {
+    uint16_t magic_num;
+    uint32_t body_len;
 };
+#pragma pack(pop, r1)
 
-}  // namespace policy
 } // namespace brpc
 
-
-#endif  //BRPC_POLICY_FILE_NAMING_SERVICE
+#endif // BRPC_ESP_HEAD_H
