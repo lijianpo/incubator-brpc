@@ -421,8 +421,9 @@ Server::~Server() {
     delete _options.nshead_service;
     _options.nshead_service = NULL;
 
-    delete _options.ipc_service;
-    _options.ipc_service = NULL;
+    // User should manage(delete) this memory himself not framwork.
+    //delete _options.ipc_service;
+    //_options.ipc_service = NULL;
 
 #ifdef ENABLE_THRIFT_FRAMED_PROTOCOL
     delete _options.thrift_service;
