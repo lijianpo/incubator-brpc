@@ -81,7 +81,7 @@ DECLARE_bool(log_as_json);
 
 namespace brpc {
 
-DEFINE_bool(graceful_quit_on_sigterm, false,
+DEFINE_bool(graceful_quit_on_sigterm, true,
             "Register SIGTERM handle func to quit graceful");
 
 const IdlNames idl_single_req_single_res = { "req", "res" };
