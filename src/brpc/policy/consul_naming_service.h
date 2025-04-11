@@ -22,6 +22,7 @@
 #include "brpc/naming_service.h"
 #include "brpc/channel.h"
 
+DECLARE_string(consul_agent_addr);
 
 namespace brpc {
 class Channel;

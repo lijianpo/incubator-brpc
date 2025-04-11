@@ -32,12 +32,11 @@
 #include "brpc/ipc_message.h"
 #include "brpc/policy/rcm_protocol.h"
 
+DEFINE_string(ipc_center_addr, "10.1.5.11:18888",
+          "The query string of request  for discovering service.");
 
 namespace brpc {
 namespace policy {
-
-DEFINE_string(ipc_center_addr, "http://10.1.5.11:18888",
-              "The query string of request  for discovering service.");
 
 DEFINE_int32(ipc_connect_timeout_ms, 200,
              "Timeout for creating connections to  in milliseconds");
@@ -52,7 +51,7 @@ DEFINE_string(ipc_file_naming_service_dir, "",
 DEFINE_int32(ipc_retry_interval_ms, 1000000,
              "Wait so many milliseconds before retry when error happens");
 
-DEFINE_int32(ipc_interval_ms, 3000000,
+DEFINE_int32(ipc_interval_ms, 10000000,
              "Wait so many milliseconds before retry when error happens");
 
 int IpcNamingService::DegradeToOtherServiceIfNeeded(const char* service_name,
@@ -77,7 +76,7 @@ int IpcNamingService::GetServers(const char* service_name,
     options.max_retry = 5;
 
     if (!_connected) {
-        if (_channel.Init("10.1.5.11:18888", "", &options) != 0) {
+        if (_channel.Init(FLAGS_ipc_center_addr.c_str(), "", &options) != 0) {
             LOG(ERROR) << "Fail to init channel to  at " << FLAGS_ipc_center_addr;
             return DegradeToOtherServiceIfNeeded(service_name, servers);
         }

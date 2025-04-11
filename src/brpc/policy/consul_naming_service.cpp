@@ -30,12 +30,12 @@
 #include "brpc/policy/file_naming_service.h"
 #include "brpc/policy/consul_naming_service.h"
 
+DEFINE_string(consul_agent_addr, "http://10.2.5.11:8500",
+        "The query string of request consul for discovering service.");
 
 namespace brpc {
 namespace policy {
 
-DEFINE_string(consul_agent_addr, "http://127.0.0.1:8500",
-              "The query string of request consul for discovering service.");
 DEFINE_string(consul_service_discovery_url,
               "/v1/health/service/",
               "The url of consul for discovering service.");

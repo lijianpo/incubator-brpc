@@ -1,4 +1,9 @@
 #include "rcm_protocol.h"
+#include <glog/logging.h>
+
+using std::map;
+using std::vector;
+using std::string;
 
 RcmProtocol::RcmProtocol(int type, const string str){
     switch(type){
@@ -18,10 +23,9 @@ RcmProtocol::RcmProtocol(int type, const string str){
 }
 
 Item::Item(){
-    m_item_map = new std::map<string, string>;
 }
 
-Item::Item(std::map<string, string> *m){
+Item::Item(map<string, string> m){
     m_item_map = m;
 } 
 
@@ -30,52 +34,74 @@ Item::Item(const Item &item){
 }
 
 int Item::set(const string key, const string value){
-    m_item_map->insert(pair<string, string>(key, value));
+    m_item_map.insert(pair<string, string>(key, value));
     return 0;
 }
 
 int Item::set(const string key, int value){
-    m_item_imap->insert(pair<string, int>(key, value));
+    m_item_map.insert(pair<string, string>(key, to_string(value)));
     return 0;
 }
 
 string Item::get(const string key){
-    std::map<string, string>::iterator map_ite = m_item_map->find(key);
-    if(map_ite != m_item_map->end()){
+    std::map<string, string>::iterator map_ite = m_item_map.find(key);
+    if(map_ite != m_item_map.end()){
         return map_ite->second;
     }
 
-    auto it2 = m_item_imap->find(key);
-    if(it2 != m_item_imap->end()){
-        return to_string(it2->second);
-    }
     return "";
 }
 
-
 int Item::del(const string key){
-    std::map<string, string>::iterator map_ite = m_item_map->find(key);
-    if(map_ite != m_item_map->end()){
-        m_item_map->erase(map_ite);
+    std::map<string, string>::iterator map_ite = m_item_map.find(key);
+    if(map_ite != m_item_map.end()){
+        m_item_map.erase(map_ite);
         return 0;
     }
     return -1;
 }
 
-
-
 RcmProtocol::~RcmProtocol(){
-    release();
+}
+
+int RcmProtocol::processJsonFeature(string name, cJSON *item){
+    if(NULL == item)
+        return -1;
+    
+    size_t array_size = cJSON_GetArraySize(item);
+    for(int i = 0; i < array_size; i++){
+        cJSON * node = cJSON_GetArrayItem(item, i);
+
+        char *data = cJSON_PrintUnformatted(node);
+        string value = data;
+        free(data);
+
+        int index_start = value.find('"', 0);
+        int index_end = value.find('"', value.length() - 1);
+        if( string::npos != index_start  && string::npos != index_end){
+            value = value.substr(index_start+1, index_end - index_start - 1);
+        }
+
+        if (m_feature_map.find(name) == m_feature_map.end()) {
+            map<string, string> feature;
+            feature[node->string] = value;
+            m_feature_map[name] = feature;
+        }
+        else {
+            m_feature_map[name][node->string] = value;
+        }
+    }
+    return 0;
 }
 
 int RcmProtocol::processJsonOther(cJSON *node){
     if(NULL == node)
         return -1;
-   
-    char *data = cJSON_PrintUnformatted(node); 
+
+    char *data = cJSON_PrintUnformatted(node);
     string value = data;
     free(data);
-    
+
     int index_start = value.find('"', 0);
     int index_end = value.find('"', value.length() - 1);
 
@@ -119,7 +145,7 @@ int RcmProtocol::processJsonMsg(cJSON *item){
         
         if (NULL != dic_node){
             size_t dic_size = cJSON_GetArraySize(dic_node);
-            std::map<string, string> *dic_map = new std::map<string, string>;
+            std::map<string, string> dic_map;
             for(int j = 0; j < dic_size; j++){
                 cJSON * node = cJSON_GetArrayItem(dic_node, j);
                
@@ -132,10 +158,10 @@ int RcmProtocol::processJsonMsg(cJSON *item){
                 if( string::npos != index_start  && string::npos != index_end){
                     value = value.substr(index_start+1, index_end - index_start - 1);
                 }
-                dic_map->insert(pair<string, string>(node->string, value));
+                dic_map.insert(pair<string, string>(node->string, value));
                 //printf("key:%s value:%s\n",node->string, value.c_str());
             }
-            if(0 != dic_map->size()){
+            if(0 != dic_map.size()){
                 m_msg_vector.push_back(dic_map);
             }
         }
@@ -145,7 +171,6 @@ int RcmProtocol::processJsonMsg(cJSON *item){
 //{"user_id": "ur:466605798", "recall_num": "6"}
 int RcmProtocol::processJson(const string str){
     //{"query":{},"msg":[]}  
-    printf("%s\n", str.c_str());  
     cJSON * json = cJSON_Parse(str.c_str());
     if(NULL == json)
         return -1;    
@@ -155,21 +180,28 @@ int RcmProtocol::processJson(const string str){
         cJSON * node = cJSON_GetArrayItem(json, i);        
         if(0 ==  strcmp("msg", node->string)){     
             processJsonMsg(node);    
-        }else if(0 == strcmp("query", node->string)){                              
-            processJsonQuery(node);
-        }else{
+        }
+        else if(0 ==  strcmp("query", node->string)){     
+            processJsonQuery(node);    
+        }
+        else if(0 ==  strcmp("feature", node->string)){     
+            processJsonFeature(node->string, node);    
+        }
+        else {                              
             processJsonOther(node);
         }
-     }     
+     }
     
-    if(NULL != json)
+    if(NULL != json) {
        cJSON_Delete(json);    
+    }
+    return 0;
 }
 
 //cmd=rcm_feed&uid=466605798&devid=45430001&num=8&write_history=1
 int RcmProtocol::processDict(const string str){
 
-    printf("%s\n", str.c_str());  
+    //printf("%s\n", str.c_str());  
     std::string strs = str + "&";
     size_t pos = strs.find("&");
     size_t size = strs.size();
@@ -262,20 +294,16 @@ int RcmProtocol::add_item(Item &item){
     return 0;
 }
 
-
-void RcmProtocol::release(){
-    std::vector<std::map<string, string> *>::iterator ite_vec= m_msg_vector.begin();    
-    
-    for(ite_vec; ite_vec != m_msg_vector.end();){
-        /*std::map<string, string>::iterator ite_map = (*ite_vec)->begin();
-        for(ite_map; ite_map != (*ite_vec)->end(); ite_map++){
-            printf("key:%s value:%s\n",ite_map->first.c_str(),ite_map->second.c_str());
-        }*/
-        std::map<string, string> *m = *ite_vec;
-        ite_vec = m_msg_vector.erase(ite_vec);
-        delete m;
-        m = NULL;
+int RcmProtocol::insert_item(int idx, Item &item){
+    if (idx < 0 || idx >= m_msg_vector.size()) {
+        return -1;
     }
+    m_msg_vector.insert(m_msg_vector.begin()+idx, item.m_item_map);
+    return 0;
+}
+
+void RcmProtocol::clear() {
+    m_msg_vector.clear();
 }
 
 int RcmProtocol::toString(string &str){
@@ -296,14 +324,34 @@ int RcmProtocol::toString(string &str){
         cJSON_AddNumberToObject(queryNode, it2->first.c_str(), it2->second);
     }   
     
-    std::vector<std::map<string, string> *>::iterator vec_ite = m_msg_vector.begin();
+    std::vector<std::map<string, string>>::iterator vec_ite = m_msg_vector.begin();
     for(vec_ite; vec_ite != m_msg_vector.end(); vec_ite++){
         cJSON *next =  cJSON_CreateObject();
-        std::map<string, string>::iterator map_ite = (*vec_ite)->begin();
-        for(map_ite; map_ite != (*vec_ite)->end(); map_ite++){
-            cJSON_AddStringToObject(next, map_ite->first.c_str(), map_ite->second.c_str());
+        std::map<string, string>::iterator map_ite = vec_ite->begin();
+        for(map_ite; map_ite != vec_ite->end(); map_ite++){
+            if (strcmp("status", map_ite->first.c_str()) == 0) {
+                cJSON_AddNumberToObject(next, map_ite->first.c_str(), atoi(map_ite->second.c_str()));
+            }
+            else {
+                cJSON_AddStringToObject(next, map_ite->first.c_str(), map_ite->second.c_str());
+            }
         } 
         cJSON_AddItemToArray(msgNode, next);
+    }
+
+    map<string, map<string, string>>::iterator feature_ite = m_feature_map.begin();
+    for(feature_ite; feature_ite != m_feature_map.end(); feature_ite++){
+        string name = feature_ite->first;
+        map<string, string> feature = feature_ite->second;
+
+        map<string, string>::iterator feature_node_it = feature.begin();
+        cJSON * featureNode = cJSON_CreateObject();
+        bool size = 0;
+        for (feature_node_it; feature_node_it != feature.end(); feature_node_it++) {
+            cJSON_AddStringToObject(featureNode, feature_node_it->first.c_str(), feature_node_it->second.c_str());
+            ++size;
+        }
+        cJSON_AddItemToObject(root, name.c_str(), featureNode);
     }
 
     std::map<string, string>::iterator map_item = m_other_map.begin();

@@ -20,17 +20,16 @@ enum storage_type{
 class Item{
 public:
     Item();
-    Item(std::map<string, string> *m);
+    Item(std::map<string, string> m);
     Item(const Item &item);
-    Item &operator=(const Item &rhs){
-    }
+    Item &operator=(const Item &rhs) {}
     int set(const string key, const string value);
     int set(const string key, int value);
     string get(const string key);
     int del(const string key);
 public:
-    std::map<string,string> *m_item_map;
-    std::map<string,int> *m_item_imap;
+    std::map<string,string> m_item_map;
+    std::map<string,int> m_item_imap;
 };
 
 class RcmProtocol{
@@ -53,12 +52,13 @@ public:
     int get_other(const string key, string &value);
     int set_other(const string key, const string value);
     int delete_other(const string key);
-
+    void clear();
 
     Item get_item(int index);
     int add_item(Item &item);
     int delete_item(int index);
     int get_items_size();
+    int insert_item(int idx, Item &item);
 
     void release();
 private:
@@ -67,11 +67,13 @@ private:
     int processJsonQuery(cJSON *item);
     int processJsonMsg(cJSON *item);
     int processJsonOther(cJSON *item);
+    int processJsonFeature(string name, cJSON* item);
 private:
     //char m_json[1024];
     std::map<string,string> m_other_map;
     std::map<string,string> m_query_map;
+    std::map<string, map<string, string>> m_feature_map;
     std::map<string,int> m_query_imap;
-    std::vector<std::map<string, string> *> m_msg_vector;  
+    std::vector<std::map<string, string>> m_msg_vector;  
 };
 #endif

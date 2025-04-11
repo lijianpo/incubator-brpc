@@ -16,12 +16,13 @@
 // under the License.
 
 
-#ifndef  BRPC_POLICY_IPC_NAMING_SERVICE
-#define  BRPC_POLICY_IPC_NAMING_SERVICE
+#ifndef  BRPC_POLICY_IPC_NAMING_SERVICE_H_
+#define  BRPC_POLICY_IPC_NAMING_SERVICE_H_
 
 #include "brpc/naming_service.h"
 #include "brpc/channel.h"
 
+DECLARE_string(ipc_center_addr);
 
 namespace brpc {
 class Channel;

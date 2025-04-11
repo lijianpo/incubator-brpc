@@ -195,7 +195,7 @@ void ProcessIpcRequest(InputMessageBase* msg_base) {
     //}
 
     IpcClosure* ipc_done = new IpcClosure;
-    //ClosureGuard done_guard(ipc_done);
+    ClosureGuard done_guard(ipc_done);
 
     Controller* cntl = &(ipc_done->controller());
     IpcMessage* request = &(ipc_done->_request);
@@ -265,7 +265,7 @@ void ProcessIpcRequest(InputMessageBase* msg_base) {
     //msg.reset();  // optional, just release resource ASAP
 
     //accessor.OnResponse(cid, saved_error);
-    ipc_done->Run();
+    //ipc_done->Run();
 }
 
 bool VerifyIpcRequest(const InputMessageBase* msg_base) {

@@ -175,7 +175,7 @@ if [ $WITH_MESALINK != 0 ]; then
 fi
 
 STATIC_LINKINGS=
-DYNAMIC_LINKINGS="-lpthread -lssl -lcrypto -ldl -lz"
+DYNAMIC_LINKINGS="-lpthread -ldl"
 
 if [ $WITH_MESALINK != 0 ]; then
     DYNAMIC_LINKINGS="$DYNAMIC_LINKINGS -lmesalink"
@@ -216,6 +216,21 @@ append_linking $GFLAGS_LIB gflags
 
 PROTOBUF_LIB=$(find_dir_of_lib_or_die protobuf)
 append_linking $PROTOBUF_LIB protobuf
+
+SSL_LIB=$(find_dir_of_lib_or_die ssl)
+append_linking $SSL_LIB ssl
+
+CRYPTO_LIB=$(find_dir_of_lib_or_die crypto)
+append_linking $CRYPTO_LIB crypto
+
+Z_LIB=$(find_dir_of_lib_or_die z)
+append_linking $Z_LIB z
+
+LZMA_LIB=$(find_dir_of_lib_or_die lzma)
+append_linking $LZMA_LIB lzma
+
+UNWIND_LIB=$(find_dir_of_lib_or_die unwind)
+append_linking $UNWIND_LIB unwind
 
 LEVELDB_LIB=$(find_dir_of_lib_or_die leveldb)
 # required by leveldb
@@ -260,9 +275,13 @@ fi
 
 PROTOBUF_HDR=$(find_dir_of_header_or_die google/protobuf/message.h)
 LEVELDB_HDR=$(find_dir_of_header_or_die leveldb/db.h)
+ZLIB_HDR=$(find_dir_of_header_or_die zlib.h)
+ZLIB_CONF_HDR=$(find_dir_of_header_or_die zconf.h)
+LZMA_HDR=$(find_dir_of_header_or_die lzma.h)
+UNWIND_HDR=$(find_dir_of_header_or_die unwind.h)
 
-HDRS=$($ECHO "$GFLAGS_HDR\n$PROTOBUF_HDR\n$LEVELDB_HDR\n$OPENSSL_HDR" | sort | uniq)
-LIBS=$($ECHO "$GFLAGS_LIB\n$PROTOBUF_LIB\n$LEVELDB_LIB\n$OPENSSL_LIB\n$SNAPPY_LIB" | sort | uniq)
+HDRS=$($ECHO "$GFLAGS_HDR\n$PROTOBUF_HDR\n$LEVELDB_HDR\n$OPENSSL_HDR\n$ZLIB_HDR\n$ZLIB_CONF_HDR\n$LZMA_HDR\n$UNWIND_HDR" | sort | uniq)
+LIBS=$($ECHO "$GFLAGS_LIB\n$PROTOBUF_LIB\n$LEVELDB_LIB\n$OPENSSL_LIB\n$SNAPPY_LIB\n$SSL_LIB\n$CRYPTO_LIB\n$Z_LIB\n$LZMA_LIB\n$UNWIND_LIB" | sort | uniq)
 
 absent_in_the_list() {
     TMP=`$ECHO "$1\n$2" | sort | uniq`
@@ -407,17 +426,19 @@ append_to_output "endif"
 
 if [ $WITH_GLOG != 0 ]; then
     GLOG_LIB=$(find_dir_of_lib_or_die glog)
-    GLOG_HDR=$(find_dir_of_header_or_die glog/logging.h windows/glog/logging.h)
+    GLOG_HDR=$(find_dir_of_header_or_die glog/logging.h windows/glog/logging.h glog/platform.h)
     append_to_output_libs "$GLOG_LIB"
     append_to_output_headers "$GLOG_HDR"
-    if [ -f "$GLOG_LIB/libglog.$SO" ]; then
-        append_to_output "DYNAMIC_LINKINGS+=-lglog"
-    else
+    GLOG_HDR=$(find_dir_of_header_or_die glog/platform.h)
+    append_to_output_headers "$GLOG_HDR"
+    if [ -f "$GLOG_LIB/libglog.a" ]; then
         if [ "$SYSTEM" = "Darwin" ]; then
             append_to_output "STATIC_LINKINGS+=$GLOG_LIB/libglog.a"
         else
             append_to_output "STATIC_LINKINGS+=-lglog"
         fi
+    else
+        append_to_output "DYNAMIC_LINKINGS+=-lglog"
     fi
 fi
 
